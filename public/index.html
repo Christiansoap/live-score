@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实时比分 · 足球 & 篮球</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-icon">⚽🏀</span>
+      <div>
+        <h1>实时比分</h1>
+        <p class="subtitle">足球 · 篮球 全球联赛即时比分</p>
+      </div>
+    </div>
+    <div class="status-area">
+      <div class="refresh-info">
+        <span id="countdown" class="countdown">--</span>
+        <button id="refreshBtn" class="refresh-btn" title="手动刷新">⟳ 刷新</button>
+      </div>
+      <div class="updated" id="updatedAt">最后更新：--</div>
+      <div class="sources" id="sourcesInfo"></div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-group="all">全部</button>
+</nav>
+
+<div class="preview-banner" id="previewBanner" hidden></div>
+<div class="error-banner" id="errorBanner" hidden></div>
+
+<main class="content" id="content">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>正在加载实时比分数据…</p>
+  </div>
+</main>
+
+<footer class="footer">
+  <p>数据来源：ESPN · OpenLigaDB · TheSportsDB ｜ 数据仅供参考，请以官方为准 ｜ 自动刷新：60 秒</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
