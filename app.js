@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const REFRESH_INTERVAL = 60; // 秒
+  const REFRESH_INTERVAL = 5; // 秒（最小间隔）
   const contentEl = document.getElementById('content');
   const tabsEl = document.getElementById('tabs');
   const updatedEl = document.getElementById('updatedAt');
@@ -212,7 +212,7 @@
         if (res.ok) data = await res.json();
       } catch (e) { /* 降级 */ }
       if (!data) {
-        const res2 = await fetch('data.json', { cache: 'no-store' });
+        const res2 = await fetch('data.json');
         if (!res2.ok) throw new Error('HTTP ' + res2.status);
         data = await res2.json();
       }
