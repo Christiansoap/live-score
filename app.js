@@ -53,7 +53,11 @@
     return `<div class="team ${isAway ? 'away' : ''}">${logo}<span class="team-name" title="${esc(team.name)}">${esc(team.name)}</span></div>`;
   }
 
-  function scoreHTML(homeScore, awayScore) {
+  function scoreHTML(homeScore, awayScore, status) {
+    // 未开始的比赛不显示比分
+    if (status === 'pre' || status === 'postponed') {
+      return `<span class="dash">vs</span>`;
+    }
     const hasHome = homeScore !== null && homeScore !== undefined;
     const hasAway = awayScore !== null && awayScore !== undefined;
     if (hasHome && hasAway) return `${homeScore}<span class="dash"> - </span>${awayScore}`;
@@ -80,7 +84,7 @@
           <span class="league-tag">${esc(ev.leagueName)}</span>
           <span class="match-time">${esc(timeLabel)}</span>
         </div>
-        <div class="match-row">${teamHTML(ev.home, false)}<div class="score-box">${scoreHTML(ev.home.score, ev.away.score)}</div>${teamHTML(ev.away, true)}</div>
+        <div class="match-row">${teamHTML(ev.home, false)}<div class="score-box">${scoreHTML(ev.home.score, ev.away.score, ev.status)}</div>${teamHTML(ev.away, true)}</div>
         <div class="status-badge">
           <span class="status-dot ${dot}"></span>
           <span class="status-text ${dot}">${esc(ev.statusText)}</span>
@@ -150,11 +154,20 @@
         contentEl.innerHTML = `<div class="empty">今日预告中暂无该分类比赛</div>`;
         return;
       }
-      const liveCount = evs.filter(e => e.status === 'live').length;
-      contentEl.innerHTML = `<div class="league-block">
-        <div class="league-header"><h2>今日精选比赛</h2><span class="league-count">${evs.length} 场${liveCount ? '（' + liveCount + ' 场进行中置顶）' : ''}</span></div>
-        <div class="match-grid">${evs.map(matchCardHTML).join('')}</div>
-      </div>`;
+      const live = evs.filter(e => e.status === 'live');
+      const pre = evs.filter(e => e.status === 'pre' || e.status === 'postponed');
+      const post = evs.filter(e => e.status === 'post' || e.status === 'canceled');
+      const section = (title, icon, list, emptyText) => {
+        if (!list.length) return '';
+        return `<div class="league-block">
+          <div class="league-header section-live"><h2>${icon} ${title}</h2><span class="league-count">${list.length} 场</span></div>
+          <div class="match-grid">${list.map(matchCardHTML).join('')}</div>
+        </div>`;
+      };
+      contentEl.innerHTML =
+        section('进行中', '🔴', live, '暂无进行中的比赛') +
+        section('未开始', '⏳', pre, '暂无未开始的比赛') +
+        section('已结束', '🏁', post, '暂无已结束的比赛');
       return;
     }
     const groups = state.activeGroup === 'all' ? state.groups : state.groups.filter(g => g.key === state.activeGroup);
