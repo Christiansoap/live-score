@@ -151,23 +151,46 @@ function parsePreviewHtml(html) {
   return matches;
 }
 const previewCache = { matches: [], fetchedAt: null, error: null, fetchedAtMs: 0 };
+const PREVIEW_CACHE_FILE = path.join(__dirname, 'preview-cache.json');
 async function fetchPreview() {
   const dayKey = new Date().toISOString().slice(0, 10);
-  try {
-    const res = await fetchWithTimeout(PREVIEW_URL, { headers: { 'User-Agent': UA_BROWSER } });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const html = await res.text();
-    const matches = parsePreviewHtml(html);
-    if (!matches.length) throw new Error('未解析到比赛');
-    previewCache.matches = matches;
-    previewCache.fetchedAt = new Date().toISOString();
-    previewCache.error = null;
-    previewCache.fetchedAtMs = Date.now();
-    return { matches, fetchedAt: previewCache.fetchedAt, dayKey };
-  } catch (e) {
-    previewCache.error = e.message;
-    return { matches: [], fetchedAt: null, dayKey, error: e.message };
+  // 抓取（带重试）
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetchWithTimeout(PREVIEW_URL, { headers: { 'User-Agent': UA_BROWSER } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const html = await res.text();
+      const matches = parsePreviewHtml(html);
+      if (!matches.length) throw new Error('未解析到比赛');
+      previewCache.matches = matches;
+      previewCache.fetchedAt = new Date().toISOString();
+      previewCache.error = null;
+      previewCache.fetchedAtMs = Date.now();
+      // 写入缓存文件
+      try { fs.writeFileSync(PREVIEW_CACHE_FILE, JSON.stringify({ matches, fetchedAt: previewCache.fetchedAt, dayKey })); } catch (e) {}
+      console.log('预告抓取成功:', matches.length, '场 (第' + (attempt + 1) + '次)');
+      return { matches, fetchedAt: previewCache.fetchedAt, dayKey };
+    } catch (e) {
+      previewCache.error = e.message;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+    }
   }
+  // 失败：读取上次成功的缓存
+  try {
+    if (fs.existsSync(PREVIEW_CACHE_FILE)) {
+      const cached = JSON.parse(fs.readFileSync(PREVIEW_CACHE_FILE, 'utf8'));
+      if (cached && cached.matches && cached.matches.length) {
+        previewCache.matches = cached.matches;
+        previewCache.fetchedAt = cached.fetchedAt;
+        previewCache.fetchedAtMs = Date.now();
+        previewCache.error = '抓取失败，使用缓存: ' + previewCache.error;
+        console.log('⚠️ 预告抓取失败，使用缓存:', cached.matches.length, '场 |', previewCache.error);
+        return { matches: cached.matches, fetchedAt: cached.fetchedAt, dayKey, cached: true };
+      }
+    }
+  } catch (e) {}
+  console.log('❌ 预告抓取失败且无缓存:', previewCache.error);
+  return { matches: [], fetchedAt: null, dayKey, error: previewCache.error };
 }
 
 // ---- 数据抓取 ----
